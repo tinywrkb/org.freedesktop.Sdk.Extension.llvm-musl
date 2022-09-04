@@ -321,6 +321,7 @@ modules:
       - -DFFI_INCLUDE_DIRS=/usr/lib/sdk/llvm-musl/include
       - -DLIBLZMA_INCLUDE_DIR=/usr/lib/sdk/llvm-musl/include
       - -DZLIB_INCLUDE_DIR=/usr/lib/sdk/llvm-musl/include
+      - -DTerminfo_LIBRARIES:FILEPATH=/usr/lib/sdk/llvm-musl/lib/libncursesw.a
     sources:
       - type: archive
         url: https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.6/clang-14.0.6.src.tar.xz
