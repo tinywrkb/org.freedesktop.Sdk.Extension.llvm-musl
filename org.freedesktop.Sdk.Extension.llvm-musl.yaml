@@ -1,0 +1,342 @@
+id: org.freedesktop.Sdk.Extension.llvm-musl
+branch: '22.08'
+runtime: org.freedesktop.Sdk
+runtime-version: '22.08'
+sdk: org.freedesktop.Sdk
+build-extension: true
+separate-locales: false
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.musl
+build-options:
+  cflags: -I/usr/lib/sdk/llvm-musl/include
+  cxxflags: -I/usr/lib/sdk/llvm-musl/include
+  ldflags: -L/usr/lib/sdk/llvm-musl/lib
+  prefix: /usr/lib/sdk/llvm-musl
+  libdir: /usr/lib/sdk/llvm-musl/lib
+  prepend-path: /usr/lib/sdk/llvm-musl/bin
+  prepend-ld-library-path: /usr/lib/sdk/llvm-musl/lib
+  prepend-pkg-config-path: /usr/lib/sdk/llvm-musl/lib/pkgconfig
+  append-path: /usr/lib/sdk/musl/bin
+  strip: true
+x-musl-static-build-options: &musl-static-build-options
+  cflags: -static -fPIC -g0
+  cxxflags: -static -fPIC -g0
+  ldflags: -static -fPIC -Wl,-fuse-ld=mold
+  env:
+    - AR=x86_64-linux-musl-ar
+    - CC=x86_64-linux-musl-gcc
+    - CXX=x86_64-linux-musl-g++
+    - LD=x86_64-linux-musl-ld.mold
+
+modules:
+  - name: prepare-ccache
+    buildsystem: simple
+    build-commands:
+      - |
+        set -e
+        if [ -n "$CCACHE_DIR" ]; then
+          install -dm755 ${FLATPAK_DEST}/bin
+          for cmp in gcc g++; do
+            ln -s /usr/bin/ccache ${FLATPAK_DEST}/bin/${FLATPAK_ARCH}-linux-musl-${cmp}
+          done
+        fi
+    cleanup:
+      - '*'
+
+  - name: musl-libc-shared
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 /usr/lib/sdk/musl/${FLATPAK_ARCH}-linux-musl/lib/libc.so ${FLATPAK_DEST}/lib/libc.musl-${FLATPAK_ARCH}.so.1
+
+  - name: llvm
+    build-options: *musl-static-build-options
+    buildsystem: cmake
+    builddir: true
+    config-opts:
+      # TODO: consider enabling docs, requires python-psutil python-recommonmark python-sphinx
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_SHARED_LIBS=OFF
+      - -DLLVM_BUILD_STATIC=ON
+      - -DLLVM_LINK_LLVM_DYLIB=OFF
+      - -DCMAKE_MODULE_PATH=/run/build/llvm/Modules
+     #- -DDCMAKE_SKIP_RPATH=OFF
+     #- -DLLVM_LOCAL_RPATH=
+     #- -DDLLVM_BINUTILS_INCDIR=
+     #- -DLLVM_INSTALL_BINUTILS_SYMLINKS=OFF
+      - -DLLVM_INSTALL_UTILS=ON
+     #- -DLLVM_INSTALL_MODULEMAPS=OFF
+      - -DLLVM_ENABLE_FFI=ON
+      - -DLLVM_ENABLE_TERMINFO=ON
+      - -DLLVM_ENABLE_LIBXML2=ON
+      - -DLLVM_ENABLE_LIBEDIT=ON
+     #- -DLLVM_ENABLE_LIBPFM=OFF
+      - -DLLVM_ENABLE_THREADS=ON
+      - -DLLVM_ENABLE_PIC=ON
+     #- -DLLVM_ENABLE_MODULES=OFF
+     #- -DLLVM_ENABLE_LOCAL_SUBMODULE_VISIBILITY=ON
+     #- -DLLVM_ENABLE_LIBCXX=OFF
+     #- -DLLVM_STATIC_LINK_CXX_STDLIB=OFF
+     #- -DLLVM_ENABLE_LLD=OFF
+     #- -DLLVM_ENABLE_PEDANTIC=ON
+     #- -DLLVM_ENABLE_WERROR=OFF
+     #- -DLLVM_ENABLE_DUMP=OFF
+     #- -DLLVM_ENABLE_ASSERTIONS=OFF
+     #- -DLLVM_ENABLE_EXPENSIVE_CHECKS=OFF
+     #- -DLLVM_ENABLE_STRICT_FIXED_SIZE_VECTORS=OFF
+     #- -DLLVM_USE_OPROFILE=OFF
+      - -DLLVM_USE_PERF=ON
+     #- -DLLVM_OPTIMIZE_SANITIZED_BUILDS=ON
+     #- -DLLVM_USE_SPLIT_DWARF=OFF
+     #- -DLLVM_INCLUDE_TOOLS=ON
+     #- -DLLVM_BUILD_TOOLS=ON
+     #- -DLLVM_INCLUDE_UTILS=ON
+     #- -DLLVM_INCLUDE_RUNTIMES=ON
+     #- -DLLVM_BUILD_RUNTIMES=ON
+     #- -DLLVM_BUILD_RUNTIME=ON
+      - -DLLVM_BUILD_EXAMPLES=OFF
+      - -DLLVM_INCLUDE_EXAMPLES=OFF
+      - -DLLVM_BUILD_TESTS=OFF
+      - -DLLVM_INCLUDE_TESTS=OFF
+      - -DLLVM_INCLUDE_GO_TESTS=OFF
+      - -DLLVM_BUILD_BENCHMARKS=OFF
+      - -DLLVM_INCLUDE_BENCHMARKS=OFF
+      - -DLLVM_BUILD_DOCS=OFF
+      - -DLLVM_INCLUDE_DOCS=OFF
+      - -DLLVM_ENABLE_DOXYGEN=OFF
+      - -DLLVM_ENABLE_SPHINX=OFF
+      - -DLLVM_ENABLE_OCAMLDOC=OFF
+      - -DLLVM_ENABLE_BINDINGS=OFF
+     #- -DLLVM_OPTIMIZED_TABLEGEN=OFF
+     #- -DLLVM_ENABLE_PLUGINS=
+      - -DBacktrace_INCLUDE_DIR=/usr/lib/sdk/llvm-musl/include
+      - -DCMAKE_INSTALL_OLDINCLUDEDIR=/usr/lib/sdk/llvm-musl/include
+      - -DFFI_INCLUDE_DIRS=/usr/lib/sdk/llvm-musl/include
+      - -DZLIB_INCLUDE_DIR=/usr/lib/sdk/llvm-musl/include
+    sources:
+      - type: archive
+        url: https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.6/llvm-14.0.6.src.tar.xz
+        sha256: 050922ecaaca5781fdf6631ea92bc715183f202f9d2f15147226f023414f619a
+        x-checker-data:
+          type: anitya
+          project-id: 1830
+          stable-only: true
+          url-template: https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/llvm-$version.src.tar.xz
+
+    modules:
+      - name: libffi-static
+        build-options: *musl-static-build-options
+        config-opts:
+          - --disable-shared
+          - --disable-docs
+          - --disable-multi-os-directory
+          - --disable-exec-static-tramp
+          - --enable-pax_emutramp
+        sources:
+          - type: archive
+            url: https://github.com/libffi/libffi/releases/download/v3.4.2/libffi-3.4.2.tar.gz
+            sha256: 540fb721619a6aba3bdeef7d940d8e9e0e6d2c193595bc243241b77ff9e93620
+            x-checker-data:
+              type: anitya
+              project-id: 1611
+              stable-only: true
+              url-template: https://github.com/libffi/libffi/releases/download/v$version/libffi-$version.tar.gz
+        cleanup:
+          - '*'
+
+      - name: zlib-static
+        build-options: *musl-static-build-options
+        config-opts:
+          - --static
+        sources:
+          - type: archive
+            url: https://zlib.net/zlib-1.2.12.tar.gz
+            sha256: 91844808532e5ce316b3c010929493c0244f3d37593afd6de04f71821d5136d9
+            x-checker-data:
+              type: anitya
+              project-id: 5303
+              stable-only: true
+              url-template: https://zlib.net/zlib-$version.tar.gz
+        cleanup:
+          - '*'
+
+      - name: xz-static
+        build-options: *musl-static-build-options
+        config-opts:
+          - --disable-shared
+          - --disable-nls
+          - --disable-xz
+          - --disable-xzdec
+          - --disable-lzmadec
+          - --disable-lzmainfo
+          - --disable-lzma-links
+          - --disable-scripts
+          - --disable-doc
+        sources:
+          - type: archive
+            url: https://tukaani.org/xz/xz-5.2.6.tar.gz
+            sha256: a2105abee17bcd2ebd15ced31b4f5eda6e17efd6b10f921a01cda4a44c91b3a0
+            x-checker-data:
+              type: anitya
+              project-id: 5277
+              stable-only: true
+              url-template: https://tukaani.org/xz/xz-$version.tar.gz
+        cleanup:
+          - '*'
+
+      - name: ncurses-static
+        build-options: *musl-static-build-options
+        config-opts:
+          - --without-dlsym
+          - --with-terminfo-dirs=${datadir}/share/terminfo:/var/lib/devenv/share/terminfo:/usr/share/terminfo
+         #- --with-default-terminfo-dir=${datadir}/terminfo
+          - --disable-db-install
+          - --enable-widec
+          - --enable-pc-files
+          - --with-normal
+          - --with-cxx
+          - --with-cxx-binding
+          - --without-ada
+          - --without-debug
+          - --without-manpages
+          - --without-progs
+          - --without-tests
+        post-install:
+          - ln -s libncursesw.a ${FLATPAK_DEST}/lib/libcurses.a
+          - ln -s libncursesw.a ${FLATPAK_DEST}/lib/libncurses.a
+          - ln -s ncursesw.pc ${FLATPAK_DEST}/lib/pkgconfig/tinfo.pc
+          - ln -s ncursesw.pc ${FLATPAK_DEST}/lib/pkgconfig/curses.pc
+          - ln -s ncursesw.pc ${FLATPAK_DEST}/lib/pkgconfig/ncurses.pc
+        sources:
+          - type: archive
+            url: https://ftp.gnu.org/pub/gnu/ncurses/ncurses-6.3.tar.gz
+            sha256: 97fc51ac2b085d4cde31ef4d2c3122c21abc217e9090a43a30fc5ec21684e059
+            x-checker-data:
+              type: anitya
+              project-id: 234776
+              stable-only: true
+              url-template: https://ftp.gnu.org/pub/gnu/ncurses/ncurses-$version.tar.gz
+          - type: shell
+            commands:
+              - install -dm755 ${FLATPAK_DEST}/lib/pkgconfig
+        cleanup:
+          - '*'
+
+      - name: readline-static # depends on ncurses
+        build-options: *musl-static-build-options
+        config-opts:
+          - --disable-shared
+          - --with-curses
+        sources:
+          - type: archive
+            url: https://ftp.gnu.org/gnu/readline/readline-8.1.2.tar.gz
+            sha256: 7589a2381a8419e68654a47623ce7dfcb756815c8fee726b98f90bf668af7bc6
+            x-checker-data:
+              type: anitya
+              project-id: 4173
+              stable-only: true
+              url-template: https://ftp.gnu.org/gnu/readline/readline-$version.tar.gz
+        cleanup:
+          - '*'
+
+      - name: libedit-static # depends on ncurses
+        build-options: *musl-static-build-options
+        config-opts:
+          - --disable-shared
+          - --disable-examples
+        make-args:
+          - CFLAGS+=-I${includedir}/ncursesw
+        sources:
+          - type: archive
+            url: https://thrysoee.dk/editline/libedit-20210910-3.1.tar.gz
+            sha256: 6792a6a992050762edcca28ff3318cdb7de37dccf7bc30db59fcd7017eed13c5
+            x-checker-data:
+              type: anitya
+              project-id: 1599
+              stable-only: true
+              url-template: https://thrysoee.dk/editline/libedit-$version.tar.g
+          - type: shell
+            commands:
+              - sed -i '/^ac_compile=/ s#\($CFLAGS\)#\1 -I${prefix}/include/ncursesw#' configure
+        cleanup:
+          - '*'
+
+      - name: libxml2-static # depends on ncurses readline xz zlib
+        # TODO: consider adding icu depend
+        build-options: *musl-static-build-options
+        config-opts:
+          - --enable-static
+          - --without-python
+        sources:
+          - type: archive
+            url: https://download.gnome.org/sources/libxml2/2.10/libxml2-2.10.2.tar.xz
+            sha256: d240abe6da9c65cb1900dd9bf3a3501ccf88b3c2a1cb98317d03f272dda5b265
+            x-checker-data:
+              type: anitya
+              project-id: 1783
+              stable-only: true
+              url-template: https://download.gnome.org/sources/libxml2/$version0.$version1/libxml2-$version.tar.xz
+        cleanup:
+          - '*'
+
+  - name: clang
+    # TODO: evaluate adding compiler-rt depend
+    build-options: *musl-static-build-options
+    buildsystem: cmake
+    builddir: true
+    config-opts:
+      # TODO: consider enabling docs
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_SHARED_LIBS=OFF
+      - -DLLVM_LINK_LLVM_DYLIB=OFF
+      - -DCMAKE_MODULE_PATH=/run/build/clang/Modules
+     #- -DDCMAKE_SKIP_RPATH=OFF
+     #- -DLLVM_INSTALL_TOOLCHAIN_ONLY=OFF
+     #- -DLLVM_FORCE_USE_OLD_HOST_TOOLCHAIN=OFF
+     #- -DCLANG_ENABLE_BOOTSTRAP=OFF
+      - -DLLVM_ENABLE_LIBXML2=ON
+      - -DCLANG_DEFAULT_PIE_ON_LINUX=ON
+     #- -DCLANG_BUILD_TOOLS=ON
+     #- -DCLANG_ENABLE_ARCMT=ON
+     #- -DCLANG_ENABLE_STATIC_ANALYZER=ON
+     #- -DCLANG_ENABLE_PROTO_FUZZER=OFF
+      - -DCLANG_INCLUDE_TESTS=OFF
+      - -DCLANG_BUILD_EXAMPLES=OFF
+      - -DCLANG_INCLUDE_DOCS=OFF
+      # ASTNodeAPI.json is failing to be built when this is enabled, see lib/Tooling/CMakeLists.txt
+      - -DCLANG_TOOLING_BUILD_AST_INTROSPECTION=OFF
+      - -DCMAKE_INSTALL_OLDINCLUDEDIR=/usr/lib/sdk/llvm-musl/include
+      - -DFFI_INCLUDE_DIRS=/usr/lib/sdk/llvm-musl/include
+      - -DLIBLZMA_INCLUDE_DIR=/usr/lib/sdk/llvm-musl/include
+      - -DZLIB_INCLUDE_DIR=/usr/lib/sdk/llvm-musl/include
+    sources:
+      - type: archive
+        url: https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.6/clang-14.0.6.src.tar.xz
+        sha256: 2b5847b6a63118b9efe5c85548363c81ffe096b66c3b3675e953e26342ae4031
+        x-checker-data:
+          type: anitya
+          project-id: 11811
+          stable-only: true
+          url-template: https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/clang-$version.src.tar.xz
+      - type: shell
+        commands:
+          - sed -e '/if (CLANG_HAVE_LIBXML)/i include(CMakeFindDependencyMacro)'
+            -e '/if (CLANG_HAVE_LIBXML)/a\  find_dependency(LibLZMA)'
+            -e 's/\(LibXml2::LibXml2\)/\1 "\\$<LINK_ONLY:LibLZMA::LibLZMA>"/'
+            -i tools/c-index-test/CMakeLists.txt
+
+  - name: packaging
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 enable.sh -t ${FLATPAK_DEST}/
+    sources:
+      - type: script
+        dest-filename: enable.sh
+        commands:
+          - |
+            SDKPATH=/usr/lib/sdk/llvm-musl
+            export PATH=${SDKPATH}/bin:$PATH
+            if [ -z "$LD_LIBRARY_PATH" ]; then
+              export LD_LIBRARY_PATH=${SDKPATH}/lib
+            else
+              export LD_LIBRARY_PATH+=:${SDKPATH}/lib
+            fi
