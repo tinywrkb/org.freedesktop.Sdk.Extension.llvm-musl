@@ -22,11 +22,19 @@ x-musl-static-build-options: &musl-static-build-options
   cflags: -static -fPIC -g0
   cxxflags: -static -fPIC -g0
   ldflags: -static -fPIC -Wl,-fuse-ld=mold
-  env:
+  env: &musl-toolchain-environment
     - AR=x86_64-linux-musl-ar
     - CC=x86_64-linux-musl-gcc
     - CXX=x86_64-linux-musl-g++
     - LD=x86_64-linux-musl-ld.mold
+x-musl-shared-build-options: &musl-shared-build-options
+  cflags: -fPIC -g0 -Bstatic -Wl,--dynamic-linker=/usr/lib/sdk/llvm-musl/lib/libc.musl-x86_64.so.1
+  cxxflags: -fPIC -g0 -Bstatic -Wl,--dynamic-linker=/usr/lib/sdk/llvm-musl/lib/libc.musl-x86_64.so.1
+  ldflags: -fPIC -g0 -Bstatic -Wl,--dynamic-linker=/usr/lib/sdk/llvm-musl/lib/libc.musl-x86_64.so.1
+    -L/usr/lib/sdk/musl/lib -L/usr/lib/sdk/musl/x86_64-linux-musl/lib
+    -Wl,-rpath=/usr/lib/sdk/llvm-musl/lib,-rpath=/usr/lib/sdk/musl/lib,-rpath=/usr/lib/sdk/musl/x86_64-linux-musl/lib
+    -Wl,-fuse-ld=mold
+  env: *musl-toolchain-environment
 
 modules:
   - name: prepare-ccache
