@@ -314,6 +314,8 @@ modules:
       # ASTNodeAPI.json is failing to be built when this is enabled, see lib/Tooling/CMakeLists.txt
       - -DCLANG_TOOLING_BUILD_AST_INTROSPECTION=OFF
       - -DCMAKE_INSTALL_OLDINCLUDEDIR=/usr/lib/sdk/llvm-musl/include
+      - -DBZIP2_INCLUDE_DIR=/usr/lib/sdk/llvm-musl/include
+      - -DBZIP2_LIBRARY_RELEASE:FILEPATH=/usr/lib/sdk/llvm-musl/lib/libz.a
       - -DFFI_INCLUDE_DIRS=/usr/lib/sdk/llvm-musl/include
       - -DLIBLZMA_INCLUDE_DIR=/usr/lib/sdk/llvm-musl/include
       - -DZLIB_INCLUDE_DIR=/usr/lib/sdk/llvm-musl/include
@@ -329,8 +331,8 @@ modules:
       - type: shell
         commands:
           - sed -e '/if (CLANG_HAVE_LIBXML)/i include(CMakeFindDependencyMacro)'
-            -e '/if (CLANG_HAVE_LIBXML)/a\  find_dependency(LibLZMA)'
-            -e 's/\(LibXml2::LibXml2\)/\1 "\\$<LINK_ONLY:LibLZMA::LibLZMA>"/'
+            -e '/if (CLANG_HAVE_LIBXML)/a\  find_dependency(LibLZMA)\n  find_dependency(BZip2)'
+            -e 's/\(LibXml2::LibXml2\)/\1 "\\$<LINK_ONLY:LibLZMA::LibLZMA>" "\\$<LINK_ONLY:BZip2::BZip2>"/'
             -i tools/c-index-test/CMakeLists.txt
 
   - name: packaging
