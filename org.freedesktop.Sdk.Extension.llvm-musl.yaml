@@ -57,15 +57,16 @@ modules:
       - install -Dm755 /usr/lib/sdk/musl/${FLATPAK_ARCH}-linux-musl/lib/libc.so ${FLATPAK_DEST}/lib/libc.musl-${FLATPAK_ARCH}.so.1
 
   - name: llvm
-    build-options: *musl-static-build-options
+    build-options: *musl-shared-build-options
     buildsystem: cmake-ninja
     builddir: true
     config-opts:
       # TODO: consider enabling docs, requires python-psutil python-recommonmark python-sphinx
       - -DCMAKE_BUILD_TYPE=Release
       - -DBUILD_SHARED_LIBS=OFF
-      - -DLLVM_BUILD_STATIC=ON
-      - -DLLVM_LINK_LLVM_DYLIB=OFF
+     #- -DLLVM_BUILD_STATIC=ON
+      - -DLLVM_BUILD_LLVM_DYLIB=ON
+      - -DLLVM_LINK_LLVM_DYLIB=ON
       - -DCMAKE_MODULE_PATH=/run/build/llvm/Modules
      #- -DDCMAKE_SKIP_RPATH=OFF
      #- -DLLVM_LOCAL_RPATH=
@@ -289,14 +290,15 @@ modules:
 
   - name: clang
     # TODO: evaluate adding compiler-rt depend
-    build-options: *musl-static-build-options
+    build-options: *musl-shared-build-options
     buildsystem: cmake-ninja
     builddir: true
     config-opts:
       # TODO: consider enabling docs
       - -DCMAKE_BUILD_TYPE=Release
       - -DBUILD_SHARED_LIBS=OFF
-      - -DLLVM_LINK_LLVM_DYLIB=OFF
+      - -DCLANG_LINK_CLANG_DYLIB=ON
+      - -DLLVM_LINK_LLVM_DYLIB=ON
       - -DCMAKE_MODULE_PATH=/run/build/clang/Modules
      #- -DDCMAKE_SKIP_RPATH=OFF
      #- -DLLVM_INSTALL_TOOLCHAIN_ONLY=OFF
