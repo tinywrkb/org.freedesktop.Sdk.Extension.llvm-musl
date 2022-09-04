@@ -65,6 +65,8 @@ modules:
       - -DCMAKE_BUILD_TYPE=Release
       - -DBUILD_SHARED_LIBS=OFF
      #- -DLLVM_BUILD_STATIC=ON
+     # NOTE: for more details about dylib options see the patchset submission @ https://reviews.llvm.org/D61909
+     #       and also review the documentation @ https://llvm.org/docs/CMake.html
       - -DLLVM_BUILD_LLVM_DYLIB=ON
       - -DLLVM_LINK_LLVM_DYLIB=ON
       - -DCMAKE_MODULE_PATH=/run/build/llvm/Modules
