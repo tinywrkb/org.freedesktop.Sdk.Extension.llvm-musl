@@ -50,7 +50,7 @@ modules:
 
   - name: llvm
     build-options: *musl-static-build-options
-    buildsystem: cmake
+    buildsystem: cmake-ninja
     builddir: true
     config-opts:
       # TODO: consider enabling docs, requires python-psutil python-recommonmark python-sphinx
@@ -281,7 +281,7 @@ modules:
   - name: clang
     # TODO: evaluate adding compiler-rt depend
     build-options: *musl-static-build-options
-    buildsystem: cmake
+    buildsystem: cmake-ninja
     builddir: true
     config-opts:
       # TODO: consider enabling docs
