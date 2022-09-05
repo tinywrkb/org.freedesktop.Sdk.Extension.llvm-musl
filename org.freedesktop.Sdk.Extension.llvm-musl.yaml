@@ -124,6 +124,11 @@ modules:
       - -DFFI_INCLUDE_DIRS=/usr/lib/sdk/llvm-musl/include
       - -DZLIB_INCLUDE_DIR=/usr/lib/sdk/llvm-musl/include
       - -DTerminfo_LIBRARIES:FILEPATH=/usr/lib/sdk/llvm-musl/lib/libncursesw.a
+    post-install:
+      # don't use cmake configs, these match runtime libs, and can't be overriden when building with meson
+      - sed -e '/INTERFACE_LINK_LIBRARIES/ s/ZLIB::ZLIB/z/'
+        -e '/INTERFACE_LINK_LIBRARIES/ s/Terminfo::terminfo/ncursesw/'
+        -i ${FLATPAK_DEST}/lib/cmake/llvm/LLVMExports.cmake
     sources:
       - type: archive
         url: https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.6/llvm-14.0.6.src.tar.xz
@@ -323,6 +328,7 @@ modules:
       - -DFFI_INCLUDE_DIRS=/usr/lib/sdk/llvm-musl/include
       - -DLIBLZMA_INCLUDE_DIR=/usr/lib/sdk/llvm-musl/include
       - -DZLIB_INCLUDE_DIR=/usr/lib/sdk/llvm-musl/include
+      # this probably could be dropped now that LLVMExports.cmake is patched
       - -DTerminfo_LIBRARIES:FILEPATH=/usr/lib/sdk/llvm-musl/lib/libncursesw.a
     sources:
       - type: archive
